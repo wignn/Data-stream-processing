@@ -1,0 +1,27 @@
+[package]
+name = "rust-service"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rust-service"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tonic = "0.11"
+prost = "0.12"
+prost-types = "0.12"
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+prometheus = { version = "0.13", features = ["process"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio", "server", "server-auto", "http1", "http2"] }
+http-body-util = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[build-dependencies]
+tonic-build = "0.11"

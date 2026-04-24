@@ -1,0 +1,22 @@
+syntax = "proto3";
+package tick;
+
+option go_package = "github.com/research/tick";
+
+service TickService {
+  rpc ProcessTick (TickRequest) returns (TickResponse);
+}
+
+message TickRequest {
+  string symbol = 1;
+  double price = 2;
+  double volume = 3;
+  int64 timestamp_ms = 4;
+  string side = 5;
+}
+
+message TickResponse {
+  double cvd = 1;
+  double order_flow_imbalance = 2;
+  int64 processed_at_ms = 3;
+}
