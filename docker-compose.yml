@@ -70,7 +70,7 @@ services:
       kafka-init:
         condition: service_completed_successfully
     env_file:
-      - ..env
+      - .env
     restart: unless-stopped
     networks:
       - research-net
