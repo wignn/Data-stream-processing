@@ -1,12 +1,18 @@
 import grpc from 'k6/net/grpc';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
 const client = new grpc.Client();
 client.load(['../proto'], 'tick.proto');
 
-const target = __ENV.TARGET || 'localhost:50051';
 const mode = __ENV.MODE || 'fixed';
+const target = __ENV.TARGET;
+const targetRust = __ENV.TARGET_RUST || 'localhost:50051';
+const targetGo = __ENV.TARGET_GO || 'localhost:50052';
+
+if (mode !== 'dual' && !target) {
+  throw new Error('TARGET is required. Example: k6 run -e TARGET=localhost:50051 grpc_bench.js');
+}
 
 const grpcErrors = new Counter('grpc_errors');
 const tickLatency = new Trend('tick_latency_ms', true);
@@ -14,6 +20,35 @@ const tickLatency = new Trend('tick_latency_ms', true);
 const sides = ['buy', 'sell'];
 
 export const options = (() => {
+  if (mode === 'dual') {
+    const vusPerService = Number(__ENV.VUS || 50);
+    const itersPerService = Number(__ENV.ITERATIONS || 10000);
+    return {
+      scenarios: {
+        rust_bench: {
+          executor: 'shared-iterations',
+          vus: vusPerService,
+          iterations: itersPerService,
+          env: {
+            TARGET: targetRust,
+          },
+        },
+        go_bench: {
+          executor: 'shared-iterations',
+          vus: vusPerService,
+          iterations: itersPerService,
+          env: {
+            TARGET: targetGo,
+          },
+        },
+      },
+      thresholds: {
+        checks: ['rate>0.99'],
+        grpc_req_duration: ['p(95)<500', 'p(99)<1000'],
+      },
+    };
+  }
+
   if (mode === 'sustained') {
     return {
       scenarios: {
@@ -47,8 +82,9 @@ export const options = (() => {
 let connected = false;
 
 export default function () {
+  const activeTarget = __ENV.TARGET || target;
   if (!connected) {
-    client.connect(target, {
+    client.connect(activeTarget, {
       plaintext: true,
       timeout: '5s',
     });
